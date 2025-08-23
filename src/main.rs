@@ -1,10 +1,11 @@
+use bevy::input::touch::Touch;
 use bevy::prelude::*;
-use bevy::window::{PrimaryWindow, WindowResolution};
+use bevy::window::WindowResolution;
 use std::f32;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
+        .add_plugins((DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Fixed Mobile Window".into(),
                 resolution: WindowResolution::new(405.0, 720.0),
@@ -12,16 +13,25 @@ fn main() {
                 ..default()
             }),
             ..default()
-        }))
+        }),))
+        .insert_resource(GunControlStatus {
+            aiming: false,
+            firing: false,
+            aim_position: Vec2::ZERO,
+        })
         .add_systems(Startup, setup)
         .add_systems(
             Update,
             (
                 check_gun_barrels_position,
                 rotate_gun_system,
-                cursor_to_world_2d,
                 fix_barrel_rotation_system,
                 fire_system,
+                update_aim_position,
+                rotate_to_gun_system,
+                update_gun_control_status,
+                bullet_move_system,
+                despawn_bullets_system,
             ),
         )
         .run();
@@ -33,7 +43,32 @@ struct Barrel {
     max_hp: f32,  // 최대 내구도
     damage: f32,  // 공격력
     reload: bool, // 발사가능
+    bullet_speed: f32,
 }
+
+impl Barrel {
+    pub fn fire(
+        &self,
+        gun: &Gun,
+        y: f32,
+        g_trans: &mut Transform,
+        g_global: &GlobalTransform,
+    ) -> Bullet {
+        let up = g_global.up();
+        let recoil = (Vec3::new(fastrand::f32() * 2. - 1., 0., fastrand::f32() * 2. - 1.)
+            .normalize()
+            * self.power)
+            * (1. - gun.recoil_control);
+        g_trans.rotation *= Quat::from_euler(EulerRot::XYZ, recoil.x, recoil.y, recoil.z);
+        Bullet {
+            y,
+            up,
+            damage: self.damage,
+            speed: self.bullet_speed,
+        }
+    }
+}
+
 #[derive(Component)]
 struct BarrelSprite {
     index: usize,
@@ -48,6 +83,22 @@ struct Gun {
     barrels: Vec<Barrel>, // 총열 entity모음
     radius: f32,          // 반지름
     aim_speed: f32,
+    recoil_control: f32, // 반동을 제어하는 정도
+}
+
+#[derive(Resource)]
+struct GunControlStatus {
+    aiming: bool, // 마우스를 누르고 있는 동안 true
+    firing: bool, // 클릭 토글
+    aim_position: Vec2,
+}
+
+#[derive(Component)]
+struct Bullet {
+    y: f32,
+    up: Dir3,
+    damage: f32,
+    speed: f32,
 }
 
 fn setup(mut commands: Commands) {
@@ -57,32 +108,36 @@ fn setup(mut commands: Commands) {
     commands
         .spawn((
             Gun {
-                speed: 1.2,
+                speed: 100.2,
                 barrels: vec![
                     Barrel {
-                        power: 0.3,
+                        power: 0.03,
                         hp: 0.,
                         max_hp: 10.,
                         damage: 0.5,
                         reload: true,
+                        bullet_speed: 100.,
                     },
                     Barrel {
-                        power: 0.3,
+                        power: 0.03,
                         hp: 0.,
                         max_hp: 10.,
                         damage: 0.5,
                         reload: true,
+                        bullet_speed: 100.,
                     },
                     Barrel {
-                        power: 0.3,
+                        power: 0.03,
                         hp: 0.,
                         max_hp: 10.,
                         damage: 0.5,
                         reload: true,
+                        bullet_speed: 100.,
                     },
                 ],
                 radius: 5.,
                 aim_speed: f32::to_radians(35.),
+                recoil_control: 0.,
             },
             Transform {
                 translation: Vec3::new(0., -320., 0.),
@@ -168,79 +223,181 @@ fn rotate_gun_system(
         .rotate_y(gun.speed * time.delta_secs());
 }
 
-fn cursor_to_world_2d(
-    primary_window: Single<&Window, With<PrimaryWindow>>,
-    camera_query: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
-    gun: Single<(&Gun, &mut Transform), With<Gun>>,
-    time: Res<Time>,
+fn fire_system(
+    gun: Single<(&mut Gun, &GlobalTransform, &mut Transform)>,
+    barrels: Query<(&BarrelSprite, &GlobalTransform)>,
+    gun_status: Res<GunControlStatus>,
+    mut commands: Commands,
 ) {
-    let (camera, camera_transform) = camera_query.into_inner();
-    let (gun, mut g_trans) = gun.into_inner();
+    if !gun_status.aiming || !gun_status.firing {
+        return;
+    }
+    let (mut gun, g_global_trans, mut g_trans) = gun.into_inner();
 
-    if let Some(cursor_position) = primary_window.cursor_position() {
-        // -------------------------------
-        // 1️⃣ Z 회전: 총이 마우스를 바라보게
-        // -------------------------------
-        let world_position = camera
-            .viewport_to_world_2d(camera_transform, cursor_position)
-            .unwrap();
+    for (index, global_trans) in barrels {
+        let local_pos =
+            g_global_trans.compute_matrix().inverse() * global_trans.translation().extend(1.0);
+        let local_x = local_pos.x;
+        if local_x > 0. && gun.barrels[index.index].reload {
+            gun.barrels[index.index].reload = false;
+            let bullet = gun.barrels[index.index].fire(
+                &gun,
+                gun_status.aim_position.y,
+                &mut g_trans,
+                g_global_trans,
+            );
 
-        let gun_forward = (g_trans.rotation * Vec3::Y).xy();
-        let to_cursor = (world_position - g_trans.translation.xy()).normalize();
-        let forward_dot_cursor = gun_forward.dot(to_cursor);
+            let barrel_offset = Vec3::new(gun.radius, 20., 0.); // 총열 위치 (총 로컬 좌표 기준)
+            let spawn_pos =
+                g_global_trans.rotation() * barrel_offset + g_global_trans.translation();
 
-        if (forward_dot_cursor - 1.0).abs() < f32::EPSILON {
-            return;
+            commands.spawn((
+                bullet,
+                Sprite {
+                    custom_size: Some(Vec2::new(1., 5.)),
+                    color: Color::srgb(1., 0.2, 0.2),
+                    ..default()
+                },
+                Transform {
+                    translation: spawn_pos,
+                    rotation: g_global_trans.rotation(),
+                    ..default()
+                },
+            ));
+        } else if local_x < 0. && !gun.barrels[index.index].reload {
+            gun.barrels[index.index].reload = true;
         }
-
-        let gun_right = (g_trans.rotation * Vec3::X).xy();
-        let right_dot_cursor = gun_right.dot(to_cursor);
-
-        let rotation_sign = -f32::copysign(1.0, right_dot_cursor);
-        let max_angle = f32::acos(forward_dot_cursor.clamp(-1.0, 1.0));
-        let rotation_angle = rotation_sign * (gun.aim_speed * time.delta_secs()).min(max_angle);
-
-        g_trans.rotate_z(rotation_angle);
-
-        // -------------------------------
-        // 2️⃣ X 회전: 화면 위아래에 따라 0~45도
-        // -------------------------------
-        let window_size = Vec2::new(
-            primary_window.width() as f32,
-            primary_window.height() as f32,
-        );
-        let normalized_y = (cursor_position.y / window_size.y).clamp(0.0, 1.0);
-        let target_x = normalized_y * 60.0_f32.to_radians();
-
-        // 현재 X 회전 가져오기
-        let (current_x, _, current_z) = g_trans.rotation.to_euler(EulerRot::XYZ);
-        let diff_x = target_x - current_x;
-
-        // aim_speed 기반으로 부드럽게 적용
-        let rotation_step_x = (gun.aim_speed * time.delta_secs()).min(diff_x.abs());
-        let new_x = current_x + diff_x.signum() * rotation_step_x;
-
-        // 최종 회전 적용 (X 회전 업데이트, Z는 그대로)
-        g_trans.rotation = Quat::from_euler(EulerRot::XYZ, new_x, 0.0, current_z);
     }
 }
 
-fn fire_system(
-    gun: Single<(&mut Gun, &GlobalTransform)>,
-    barrels: Query<(&BarrelSprite, &GlobalTransform)>,
+fn update_aim_position(
+    window: Single<&Window>,
+    touches: Res<Touches>,
+    camera: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
+    mut gun_control_status: ResMut<GunControlStatus>,
 ) {
-    let (mut gun, g_trans) = gun.into_inner();
-    let fire_point = g_trans.rotation() * Vec3::new(gun.radius, 20., 0.) + g_trans.translation();
-    let reload_point = g_trans.rotation() * Vec3::new(-gun.radius, 20., 0.) + g_trans.translation();
-    for (index, trans) in barrels {
-        if trans.translation().distance(fire_point) < 1.0 && gun.barrels[index.index].reload {
-            println!("{}fire!", index.index);
-            gun.barrels[index.index].reload = false;
-        } else if trans.translation().distance(reload_point) < 1.0
-            && !gun.barrels[index.index].reload
+    if !gun_control_status.aiming {
+        return;
+    }
+    let (camera, camera_trans) = camera.into_inner();
+    let mut aim_positon = Vec2::ZERO;
+    let mut is_pos = false;
+    if let Some(pos) = window.cursor_position() {
+        aim_positon = pos;
+        is_pos = true;
+    }
+    for touch in touches.iter() {
+        aim_positon = touch.position();
+        is_pos = true;
+    }
+
+    let aim = camera.viewport_to_world_2d(camera_trans, aim_positon);
+
+    if let Ok(pos) = aim {
+        if is_pos {
+            gun_control_status.aim_position = pos;
+        }
+    }
+}
+
+fn rotate_to_gun_system(
+    time: Res<Time>,
+    window: Single<&Window>,
+    gun: Single<(&Gun, &mut Transform)>,
+    aim: Res<GunControlStatus>,
+) {
+    let (gun, mut g_trans) = gun.into_inner();
+    let g_tal = g_trans.translation;
+    let aim_pos = aim.aim_position;
+    let aim_speed = gun.aim_speed;
+
+    // --- Z축 회전 (기존) ---
+    let gun_forward = (g_trans.rotation * Vec3::Y).xy();
+    let to_aim = (aim_pos - g_tal.xy()).normalize();
+    let forward_dot_aim = gun_forward.dot(to_aim);
+    let gun_right = (g_trans.rotation * Vec3::X).xy();
+    let right_dot_aim = gun_right.dot(to_aim);
+    let rotation_sign = -f32::copysign(1.0, right_dot_aim);
+    let max_angle = f32::acos(forward_dot_aim.clamp(-1.0, 1.0));
+    let rotation_angle = rotation_sign * (aim_speed * time.delta_secs()).min(max_angle);
+    g_trans.rotate_z(rotation_angle);
+
+    // --- X축 회전 (속도 제한 적용) ---
+    let window = window.into_inner();
+    let win_height = window.height() / 2.;
+    let screen_y = win_height - aim_pos.y.clamp(-win_height, win_height);
+    let target_x_deg = (screen_y / window.height()) * 65.0;
+    let target_x_rad = target_x_deg.to_radians();
+
+    // 현재 X축 회전
+    let (current_x, _, current_z) = g_trans.rotation.to_euler(EulerRot::XYZ);
+
+    // 목표 각도와 현재 각도 차이
+    let delta = target_x_rad - current_x;
+
+    // 제한된 회전량 (aim_speed에 맞춤)
+    let max_delta = aim_speed * time.delta_secs();
+    let applied_delta = delta.clamp(-max_delta, max_delta);
+
+    // 새로운 회전 적용 (X축에만)
+    g_trans.rotation = Quat::from_euler(EulerRot::XYZ, current_x + applied_delta, 0.0, current_z);
+}
+
+fn update_gun_control_status(
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    touches: Res<Touches>,
+    mut status: ResMut<GunControlStatus>,
+    mut last_touch: Local<Option<Touch>>, // 마지막 활성 터치 저장
+) {
+    // firing 토글 (마우스/터치 둘 다에서 발생)
+    if mouse_buttons.just_pressed(MouseButton::Left) || touches.any_just_pressed() {
+        status.firing = !status.firing;
+    }
+
+    // aiming: 마우스 누르거나 터치가 있으면 true
+    let mut aiming = mouse_buttons.pressed(MouseButton::Left);
+
+    if touches.iter().next().is_some() {
+        aiming = true;
+
+        // 마지막 눌린 터치를 저장
+        if let Some(finger) = touches.iter().max_by_key(|f| f.id()) {
+            *last_touch = Some(finger.clone());
+        }
+    } else {
+        *last_touch = None;
+    }
+
+    status.aiming = aiming;
+}
+
+fn bullet_move_system(mut bullet_query: Query<(&mut Transform, &Bullet)>, time: Res<Time>) {
+    for (mut b_trans, bullet) in bullet_query.iter_mut() {
+        let up = b_trans.rotation * Vec3::Y;
+        b_trans.translation += up * bullet.speed * time.delta_secs();
+    }
+}
+
+fn despawn_bullets_system(
+    mut commands: Commands,
+    bullets: Query<(Entity, &Transform), With<Bullet>>,
+    window: Single<&Window>,
+) {
+    let half_width = window.width() / 2.0;
+    let half_height = window.height() / 2.0;
+
+    for (entity, trans) in bullets.iter() {
+        let pos = trans.translation;
+
+        // 화면 밖 혹은 Z축 범위를 넘어갔는지 체크
+        if pos.x < -half_width
+            || pos.x > half_width
+            || pos.y < -half_height
+            || pos.y > half_height
+            || pos.z < -10000.0
+            || pos.z > 10000.0
         {
-            println!("{}reload", index.index);
-            gun.barrels[index.index].reload = true;
+            commands.entity(entity).despawn();
         }
     }
 }
