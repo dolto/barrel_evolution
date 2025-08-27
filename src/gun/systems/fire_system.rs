@@ -6,15 +6,15 @@ use crate::gun::{
 };
 
 pub fn fire_system(
-    gun: Single<(&mut Gun, &GlobalTransform, &mut Transform)>,
+    gun: Single<(&mut Gun, &GlobalTransform)>,
     barrels: Query<(&BarrelSprite, &GlobalTransform)>,
-    gun_status: Res<GunControlStatus>,
+    mut gun_status: ResMut<GunControlStatus>,
     mut commands: Commands,
 ) {
     if !gun_status.aiming || !gun_status.firing {
         return;
     }
-    let (mut gun, g_global_trans, mut g_trans) = gun.into_inner();
+    let (mut gun, g_global_trans) = gun.into_inner();
 
     for (index, global_trans) in barrels {
         let local_pos =
@@ -25,7 +25,7 @@ pub fn fire_system(
             let bullet = gun.barrels[index.index].fire(
                 &gun,
                 gun_status.aim_position.y,
-                &mut g_trans,
+                &mut gun_status,
                 g_global_trans,
             );
 
@@ -36,7 +36,7 @@ pub fn fire_system(
             commands.spawn((
                 bullet,
                 Sprite {
-                    custom_size: Some(Vec2::new(1., 5.)),
+                    custom_size: Some(Vec2::new(1.1, 5.1)),
                     color: Color::srgb(1., 0.2, 0.2),
                     ..default()
                 },

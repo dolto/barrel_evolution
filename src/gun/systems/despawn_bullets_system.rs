@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::gun::barrel::Bullet;
+use crate::gun::{barrel::Bullet, systems::DESPAWN_BULLETS_Z};
 
 pub fn despawn_bullets_system(
     mut commands: Commands,
@@ -18,8 +18,8 @@ pub fn despawn_bullets_system(
             || pos.x > half_width
             || pos.y < -half_height
             || pos.y > half_height
-            || pos.z < -10000.0
-            || pos.z > 10000.0
+            || pos.z < -DESPAWN_BULLETS_Z
+            || pos.z > DESPAWN_BULLETS_Z
         {
             commands.entity(entity).despawn();
         }

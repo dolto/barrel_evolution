@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::gun::gun::Gun;
+use crate::gun::gun::{Gun, GunControlStatus};
 
 pub struct Barrel {
     pub power: f32,   // 반동
@@ -16,15 +16,14 @@ impl Barrel {
         &self,
         gun: &Gun,
         y: f32,
-        g_trans: &mut Transform,
+        gun_control_status: &mut ResMut<GunControlStatus>,
         g_global: &GlobalTransform,
     ) -> Bullet {
         let up = g_global.up();
-        let recoil = (Vec3::new(fastrand::f32() * 2. - 1., 0., fastrand::f32() * 2. - 1.)
-            .normalize()
+        let recoil = (Vec2::new(fastrand::f32() * 2. - 1., fastrand::f32() * 2. - 1.).normalize()
             * self.power)
             * (1. - gun.recoil_control);
-        g_trans.rotation *= Quat::from_euler(EulerRot::XYZ, recoil.x, recoil.y, recoil.z);
+        gun_control_status.aim_position += recoil;
         Bullet {
             y,
             up,

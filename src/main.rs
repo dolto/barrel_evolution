@@ -29,14 +29,90 @@ fn main() {
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2d::default());
 
-    // 중심
+    commands
+        .spawn((
+            GunAimCircle,
+            Transform {
+                translation: Vec3::ZERO,
+                ..default()
+            },
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(4., 2.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(-4., 6., 0.),
+            ));
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(2., 4.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(-5., 5., 0.),
+            ));
+
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(4., 2.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(4., 6., 0.),
+            ));
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(2., 4.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(5., 5., 0.),
+            ));
+
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(4., 2.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(4., -6., 0.),
+            ));
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(2., 4.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(5., -5., 0.),
+            ));
+
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(4., 2.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(-4., -6., 0.),
+            ));
+            parent.spawn((
+                Sprite {
+                    custom_size: Some(Vec2::new(2., 4.)),
+                    color: Color::srgb(0.7, 0.1, 0.1),
+                    ..Default::default()
+                },
+                Transform::from_xyz(-5., -5., 0.),
+            ));
+        });
     commands
         .spawn((
             Gun {
-                speed: 100.2,
+                speed: f32::to_radians(720.),
                 barrels: vec![
                     Barrel {
-                        power: 0.03,
+                        power: 3.0,
                         hp: 0.,
                         max_hp: 10.,
                         damage: 0.5,
@@ -44,7 +120,7 @@ fn setup(mut commands: Commands) {
                         bullet_speed: 100.,
                     },
                     Barrel {
-                        power: 0.03,
+                        power: 3.03,
                         hp: 0.,
                         max_hp: 10.,
                         damage: 0.5,
@@ -52,7 +128,7 @@ fn setup(mut commands: Commands) {
                         bullet_speed: 100.,
                     },
                     Barrel {
-                        power: 0.03,
+                        power: 3.03,
                         hp: 0.,
                         max_hp: 10.,
                         damage: 0.5,
@@ -61,7 +137,6 @@ fn setup(mut commands: Commands) {
                     },
                 ],
                 radius: 5.,
-                aim_speed: f32::to_radians(35.),
                 recoil_control: 0.,
             },
             Transform {
