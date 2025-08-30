@@ -20,14 +20,16 @@ pub fn fire_system(
         let local_pos =
             g_global_trans.compute_matrix().inverse() * global_trans.translation().extend(1.0);
         let local_x = local_pos.x;
-        if local_x > 0. && gun.barrels[index.index].reload {
+        if local_x > 0. && !gun.barrels[index.index].is_broken && gun.barrels[index.index].reload {
             gun.barrels[index.index].reload = false;
-            let bullet = gun.barrels[index.index].fire(
-                &gun,
-                gun_status.aim_position.y,
-                &mut gun_status,
-                g_global_trans,
-            );
+            gun.barrels[index.index].hp = (gun.barrels[index.index].hp
+                + gun.barrels[index.index].hp_step)
+                .min(gun.barrels[index.index].max_hp);
+
+            if gun.barrels[index.index].hp == gun.barrels[index.index].max_hp {
+                gun.barrels[index.index].is_broken = true;
+            }
+            let bullet = gun.barrels[index.index].fire(&gun, &mut gun_status, g_global_trans);
 
             let barrel_offset = Vec3::new(gun.radius, 20., 0.); // 총열 위치 (총 로컬 좌표 기준)
             let spawn_pos =

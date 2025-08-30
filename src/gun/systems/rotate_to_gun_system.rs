@@ -10,7 +10,7 @@ pub fn rotate_to_gun_system(gun: Single<(&Gun, &mut Transform)>, aim: Res<GunCon
     // --- 목표 방향 ---
     let dir = (aim_pos - gun_pos).normalize();
 
-    // -200 ~ 250 이 0 ~ 40으로 변경
+    // -200 ~ 250 이 0 ~ 60으로 변경
     let pitch_deg = (1.0 - ((aim_pos.y + 200.0) / 450.0)).clamp(0.0, 1.0);
     let pitch = (60.0 * pitch_deg).to_radians();
 

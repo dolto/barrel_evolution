@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 
-use crate::gun::gun::GunControlStatus;
+use crate::gun::gun::{Gun, GunControlStatus};
 
 pub fn update_aim_position(
     window: Single<&Window>,
     touches: Res<Touches>,
     camera: Single<(&Camera, &GlobalTransform), With<Camera2d>>,
     mut gun_control_status: ResMut<GunControlStatus>,
+    gun: Single<&Gun>,
     time: Res<Time>,
 ) {
     if !gun_control_status.aiming {
@@ -29,8 +30,8 @@ pub fn update_aim_position(
     if let Ok(pos) = aim {
         if is_pos {
             let dir = (pos - gun_control_status.aim_position).normalize();
-            let mut g_pos = gun_control_status.aim_position
-                + dir * time.delta_secs() * gun_control_status.aim_speed;
+            let mut g_pos =
+                gun_control_status.aim_position + dir * time.delta_secs() * gun.aim_speed;
 
             g_pos.y = g_pos.y.clamp(-200.0, 250.0);
             gun_control_status.aim_position = g_pos;
