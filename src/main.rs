@@ -9,6 +9,7 @@ use gun::gun::*;
 use std::f32;
 
 use crate::enemy::func::normal_enemy_spawn;
+use crate::enemy::structs::EnemyMeshes;
 use crate::enemy::systems::EnemyPlugin;
 use crate::gun::systems::*;
 use util::*;
@@ -25,10 +26,10 @@ fn main() {
                 }),
                 ..default()
             }),
-            GunPlugin,
             EnemyPlugin,
+            GunPlugin,
         ))
-        .add_systems(Startup, setup)
+        .add_systems(PostStartup, setup)
         .run();
 }
 
@@ -88,13 +89,27 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     aim_sprite: Option<Res<AimSprite>>,
+    enemy_sprite: Res<EnemyMeshes>,
+    bullet_meshes: Res<BulletModel>,
 ) {
     commands.spawn(Camera2d::default());
 
     spawn_aim(&mut commands, &mut meshes, &mut materials, &aim_sprite);
 
-    normal_enemy_spawn(&mut commands, 1);
+    let len = enemy_sprite.normal.len();
+    let eb_mesh = bullet_meshes.boom.clone();
+    let eb_material = bullet_meshes.enemy_color.clone();
+    normal_enemy_spawn(
+        &mut commands,
+        1,
+        enemy_sprite.normal[fastrand::usize(0..len)].clone(),
+        enemy_sprite.materials[0].clone(),
+        eb_mesh,
+        eb_material,
+    );
 
+    let pb_mesh = bullet_meshes.base.clone();
+    let pb_material = bullet_meshes.player_color_red.clone();
     let bullet_test = Bullet {
         up: Dir3::Y,
         damage: 0.5,
@@ -102,6 +117,8 @@ fn setup(
         bullet_effect: Vec::new(),
         is_enemy: false,
         size: 0.2,
+        mesh: pb_mesh,
+        material: pb_material,
     };
     commands
         .spawn((

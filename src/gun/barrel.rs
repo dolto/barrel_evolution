@@ -43,6 +43,8 @@ pub struct Bullet {
     pub up: Dir3,
     pub damage: f32,
     pub speed: f32,
+    pub mesh: Handle<Mesh>,
+    pub material: Handle<ColorMaterial>,
     pub bullet_effect: Vec<BulletEffect>,
     pub is_enemy: bool,
     pub size: f32, // 피격 거리
@@ -58,6 +60,63 @@ impl Bullet {
         // 여기에 hit효과 추가
         commands.entity(entity).despawn();
     }
+}
+
+#[derive(Resource)]
+pub struct BulletModel {
+    pub base: Handle<Mesh>,
+    pub boom: Handle<Mesh>,
+
+    pub player_color_red: Handle<ColorMaterial>,
+    pub player_color_yellow: Handle<ColorMaterial>,
+    pub player_color_purple: Handle<ColorMaterial>,
+    pub player_color_green: Handle<ColorMaterial>,
+
+    pub enemy_color: Handle<ColorMaterial>,
+}
+
+impl BulletModel {
+    fn setup(
+        meshes: &mut ResMut<Assets<Mesh>>,
+        materials: &mut ResMut<Assets<ColorMaterial>>,
+    ) -> Self {
+        let player_color_red = materials.add(Color::srgb(1., 0.2, 0.2));
+        let player_color_yellow = materials.add(Color::srgb(1., 0.5, 0.));
+        let player_color_purple = materials.add(Color::srgb(0.45, 0.2, 0.8));
+        let player_color_green = materials.add(Color::srgb(0.2, 1., 0.2));
+        let enemy_color = materials.add(Color::srgb(0.2, 0.6, 0.6));
+        // custom_size: Some(Vec2::new(1.1, 5.1));
+        let parts: Vec<(f32, f32, f32, f32)> = vec![(0., 2.5, 0.5, 1.), (0., 0., 1., 5.)];
+
+        let base = meshes.add(make_rect_mesh(&parts, Color::WHITE));
+
+        let parts: Vec<(f32, f32, f32, f32)> = vec![
+            (0., 1.5, 0.5, 1.5),
+            (0., -1.5, 0.5, 1.5),
+            (1.5, 0., 1.5, 0.5),
+            (-1.5, 0., 1.5, 0.5),
+            (0., 0., 3., 3.),
+        ];
+        let boom = meshes.add(make_rect_mesh(&parts, Color::WHITE));
+
+        BulletModel {
+            base,
+            boom,
+            player_color_red,
+            player_color_yellow,
+            player_color_purple,
+            player_color_green,
+            enemy_color,
+        }
+    }
+}
+
+pub fn bullet_model_setup(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    commands.insert_resource(BulletModel::setup(&mut meshes, &mut materials));
 }
 
 #[derive(Clone)]

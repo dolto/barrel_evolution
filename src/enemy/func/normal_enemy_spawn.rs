@@ -11,7 +11,14 @@ use crate::{
     },
 };
 
-pub fn normal_enemy_spawn(commands: &mut Commands, wave: usize) {
+pub fn normal_enemy_spawn(
+    commands: &mut Commands,
+    wave: usize,
+    mesh: Handle<Mesh>,
+    material: Handle<ColorMaterial>,
+    bullet_mesh: Handle<Mesh>,
+    bullet_color: Handle<ColorMaterial>,
+) {
     let z = (DESPAWN_BULLETS_Z * 0.5 * fastrand::f32()).clamp(500., DESPAWN_BULLETS_Z * 0.5);
 
     let y = 300. * fastrand::f32() - 100.;
@@ -28,17 +35,18 @@ pub fn normal_enemy_spawn(commands: &mut Commands, wave: usize) {
     let mut trans = Transform::from_xyz(x, y, z);
     let target = trans.translation + dir;
     let dir = (target - trans.translation).normalize();
+    let hp = 1000. + wave as f32;
+    let speed = 30. * (wave as f32 + fastrand::f32());
     trans.rotation = Quat::from_rotation_arc(Vec3::Y, dir);
     commands.spawn((
-        Sprite {
-            custom_size: Some(Vec2::splat(5.)),
-            color: Color::WHITE,
-            ..default()
-        },
+        Mesh2d(mesh),
+        MeshMaterial2d(material),
         trans,
         Enemy {
-            hp: 1000. + wave as f32,
-            speed: 30. * (wave as f32 + fastrand::f32()),
+            hp,
+            max_hp: hp,
+            speed,
+            max_speed: speed,
             barrel: Barrel {
                 power: 5.,
                 hp: 0.,
@@ -53,10 +61,13 @@ pub fn normal_enemy_spawn(commands: &mut Commands, wave: usize) {
                     bullet_effect: Vec::new(),
                     is_enemy: true,
                     size: 0.2,
+                    mesh: bullet_mesh,
+                    material: bullet_color,
                 },
             },
             at_speed: Timer::new(Duration::from_millis(1000), TimerMode::Repeating),
             at_dist: 0.,
+            at_dist_step: 1.,
             direction: dir,
             size_side: 5.,
             size_deep: 100.,

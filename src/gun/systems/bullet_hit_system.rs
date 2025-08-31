@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
-    enemy::structs::Enemy,
+    enemy::{structs::Enemy, systems::ENEMY_MAX_Z},
     gun::{barrel::Bullet, systems::DESPAWN_BULLETS_Z},
 };
 
@@ -15,7 +15,7 @@ pub fn bullet_hit_system(
         let bz = b_pos.z;
         for (e_trans, mut enemy, e_entity) in enemy_query.iter_mut() {
             let e_pos = e_trans.translation();
-            let e_scale = ((e_pos.y + 200.) / 450.) * 2.5 + 0.5;
+            let e_scale = (1. - (e_pos.z / ENEMY_MAX_Z)) * 1.5 + 0.5;
             let b_scale = (DESPAWN_BULLETS_Z - b_pos.z) / DESPAWN_BULLETS_Z;
             let enemy_side = enemy.size_side * e_scale;
             let bullet_side = bullet.size * b_scale;

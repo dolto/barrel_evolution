@@ -33,7 +33,10 @@ use update_aim_circle_position::*;
 use update_aim_position::*;
 use update_gun_control_status::*;
 
-use crate::gun::{barrel::barrel_model_setup, gun::GunControlStatus};
+use crate::gun::{
+    barrel::{barrel_model_setup, bullet_model_setup},
+    gun::GunControlStatus,
+};
 
 pub const DESPAWN_BULLETS_Z: f32 = 1500.;
 
@@ -47,7 +50,7 @@ impl Plugin for GunPlugin {
             aim_position: Vec2::ZERO,
             is_enemy_z: false,
         })
-        .add_systems(Startup, (barrel_model_setup))
+        .add_systems(Startup, (barrel_model_setup, bullet_model_setup))
         .add_systems(
             Update,
             (

@@ -16,7 +16,7 @@ pub fn aim_circle_detecting_system(
             .dot(gun_trans.rotation() * Vec3::NEG_Z)
             .abs();
 
-        if dist <= enemy.size_deep {
+        if dist <= enemy.size_deep * 0.7 {
             temp = true;
         }
     }

@@ -30,6 +30,8 @@ pub fn fire_system(
                 gun.barrels[index.index].is_broken = true;
             }
             let bullet = gun.barrels[index.index].fire(&gun, &mut gun_status, g_global_trans);
+            let b_mesh = bullet.mesh.clone();
+            let b_material = bullet.material.clone();
 
             let barrel_offset = Vec3::new(gun.radius, 20., 0.); // 총열 위치 (총 로컬 좌표 기준)
             let spawn_pos =
@@ -37,11 +39,8 @@ pub fn fire_system(
 
             commands.spawn((
                 bullet,
-                Sprite {
-                    custom_size: Some(Vec2::new(1.1, 5.1)),
-                    color: Color::srgb(1., 0.2, 0.2),
-                    ..default()
-                },
+                Mesh2d(b_mesh.clone()),
+                MeshMaterial2d(b_material.clone()),
                 Transform {
                     translation: spawn_pos,
                     rotation: g_global_trans.rotation(),
