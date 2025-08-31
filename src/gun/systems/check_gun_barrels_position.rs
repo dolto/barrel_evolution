@@ -46,7 +46,7 @@ pub fn check_gun_barrels_position(
         let barrel_entity = commands
             .spawn((
                 // Sprite를 Mesh로 변경
-                Mesh2d(model.unwrap().clone()),
+                Mesh2d(model.clone()),
                 MeshMaterial2d(material.clone()),
                 Transform {
                     translation: Vec3::new(x, y, z),

@@ -70,21 +70,18 @@ pub enum BulletEffect {
 
 #[derive(Resource)]
 pub struct BarrelModel {
-    pub prototype: Option<Handle<Mesh>>,
+    pub prototype: Handle<Mesh>,
     // 모델 추가 예정
 }
 
 impl BarrelModel {
-    fn new() -> Self {
-        BarrelModel { prototype: None }
-    }
-    fn setup(mut self, meshes: &mut ResMut<Assets<Mesh>>) -> Self {
+    fn setup(meshes: &mut ResMut<Assets<Mesh>>) -> Self {
         let parts: Vec<(f32, f32, f32, f32)> = vec![(0., 0., 2., 20.)];
-        self.prototype = Some(meshes.add(make_rect_mesh(&parts, Color::WHITE)));
-        self
+        let prototype = meshes.add(make_rect_mesh(&parts, Color::WHITE));
+        BarrelModel { prototype }
     }
 }
 
 pub fn barrel_model_setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
-    commands.insert_resource(BarrelModel::new().setup(&mut meshes));
+    commands.insert_resource(BarrelModel::setup(&mut meshes));
 }

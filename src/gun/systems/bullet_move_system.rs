@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Enemy, gun::barrel::Bullet};
+use crate::gun::barrel::Bullet;
 
 pub fn bullet_move_system(mut bullet_query: Query<(&mut Transform, &Bullet)>, time: Res<Time>) {
     for (mut b_trans, bullet) in bullet_query.iter_mut() {

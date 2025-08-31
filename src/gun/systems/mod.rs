@@ -1,4 +1,5 @@
 mod aim_circle_color_system;
+mod aim_circle_detecting_system;
 mod bullet_hit_system;
 mod bullet_move_system;
 mod bullets_scail_system;
@@ -15,6 +16,7 @@ mod update_aim_position;
 mod update_gun_control_status;
 
 use aim_circle_color_system::*;
+use aim_circle_detecting_system::*;
 use bevy::prelude::*;
 use bullet_hit_system::*;
 use bullet_move_system::*;
@@ -64,6 +66,7 @@ impl Plugin for GunPlugin {
                 gun_cooling_system,
                 bullet_hit_system,
                 gun_cooling_color_system,
+                aim_circle_detecting_system,
             ),
         );
     }
