@@ -20,7 +20,6 @@ pub struct GunControlStatus {
     pub aiming: bool, // 마우스를 누르고 있는 동안 true
     pub firing: bool, // 클릭 토글
     pub aim_position: Vec2,
-    pub is_enemy_z: bool, // 조준하는 z축에 적이 있는경우 true
 }
 
 #[derive(Component)]

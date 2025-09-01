@@ -48,7 +48,6 @@ impl Plugin for GunPlugin {
             aiming: false,
             firing: false,
             aim_position: Vec2::ZERO,
-            is_enemy_z: false,
         })
         .add_systems(Startup, (barrel_model_setup, bullet_model_setup))
         .add_systems(
@@ -64,8 +63,8 @@ impl Plugin for GunPlugin {
                 bullet_move_system,
                 despawn_bullets_system,
                 bullets_scail_system,
-                update_aim_circle_position,
-                aim_circle_color_system,
+                // update_aim_circle_position,
+                // aim_circle_color_system,
                 gun_cooling_system,
                 bullet_hit_system,
                 gun_cooling_color_system,
