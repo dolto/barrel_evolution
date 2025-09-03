@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, sprite::Material2d};
 
 use crate::{
+    effect::structs::EffectMaker,
     enemy::{
         aim::{Aim, AimSprite},
         structs::Enemy,
@@ -12,6 +13,7 @@ use crate::{
         barrel::{Barrel, Bullet},
         systems::DESPAWN_BULLETS_Z,
     },
+    util::DeadFlag,
 };
 
 pub fn normal_enemy_spawn(
@@ -22,6 +24,7 @@ pub fn normal_enemy_spawn(
     bullet_mesh: Handle<Mesh>,
     bullet_color: Handle<ColorMaterial>,
     aim_sprite: &AimSprite,
+    effect_mesh: Vec<Handle<Mesh>>,
 ) {
     let z = (DESPAWN_BULLETS_Z * 0.5 * fastrand::f32()).clamp(500., DESPAWN_BULLETS_Z * 0.5);
 
@@ -76,6 +79,22 @@ pub fn normal_enemy_spawn(
                 direction: dir,
                 size_side: 5.,
                 size_deep: 100.,
+            },
+            DeadFlag(false),
+            EffectMaker {
+                count: 1..5,
+                start_dir: Vec3::splat(-100.)..Vec3::splat(100.),
+                end_dir: Vec3::splat(-1000.)..Vec3::splat(1000.),
+                // 밝은 노란색 계열 (RGB 대략 0.8~1.0, G는 살짝 낮춰도 됨)
+                start_color: Vec4::new(0.9, 0.9, 0.2, 1.0)..Vec4::new(1.0, 1.0, 0.4, 1.0),
+                // 주황색 계열 (R 높고, G 중간, B 낮음)
+                end_color: Vec4::new(1.0, 0.6, 0.0, 1.0)..Vec4::new(1.0, 0.4, 0.0, 1.0),
+                start_scale: (3.0)..6.,
+                end_scale: (0.)..0.1,
+                max_time: (0.3)..(1.2),
+                rotate: Vec3::splat(-10.)..Vec3::splat(10.),
+                meshes: effect_mesh,
+                make_flag: false,
             },
         ))
         .with_child((

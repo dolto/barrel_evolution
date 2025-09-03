@@ -31,9 +31,9 @@ pub fn enemy_move_system(mut enemys: Query<(&mut Transform, &mut Enemy)>, time: 
         dir *= 0.995; // 값이 1.0에 가까울수록 더 오래 출렁거림
 
         // 방향 갱신
-        enemy.direction = dir.normalize_or_zero();
+        enemy.direction = dir.normalize();
 
-        // 바라보는 방향 맞춤
+        // 바라보는 방향 맞춤 (방향 벡터가 0이라면 회전하면 적용하면 안됨)
         if enemy.direction.length_squared() > 0.0 {
             enemy_trans.rotation = Quat::from_rotation_arc(Vec3::Y, enemy.direction);
         }

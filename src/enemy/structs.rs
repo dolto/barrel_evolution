@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::{gun::barrel::Barrel, util::make_rect_mesh};
+use crate::{
+    gun::barrel::Barrel,
+    util::{DeadFlag, make_rect_mesh},
+};
 
 #[derive(Component)]
 pub struct Enemy {
@@ -18,10 +21,11 @@ pub struct Enemy {
 }
 
 impl Enemy {
-    pub fn dead(&self, commands: &mut Commands, entity: Entity) {
+    pub fn dead(&self, dead_flag: &mut DeadFlag) {
         // 여기에 죽음 이펙트 추가
-        commands.entity(entity).despawn();
+        dead_flag.0 = true;
     }
+    pub fn hit(&mut self, damage: f32, pos: Vec3) {}
 }
 
 #[derive(Resource)]

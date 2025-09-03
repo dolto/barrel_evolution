@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     gun::gun::{Gun, GunControlStatus},
-    util::make_rect_mesh,
+    util::{DeadFlag, dead_flag, make_rect_mesh},
 };
 
 pub struct Barrel {
@@ -54,11 +54,6 @@ impl Bullet {
     pub fn with_up(mut self, up: Dir3) -> Self {
         self.up = up;
         self
-    }
-
-    pub fn hit(&self, commands: &mut Commands, entity: Entity) {
-        // 여기에 hit효과 추가
-        commands.entity(entity).despawn();
     }
 }
 

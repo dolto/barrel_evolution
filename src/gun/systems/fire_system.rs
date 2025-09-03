@@ -1,8 +1,11 @@
 use bevy::prelude::*;
 
-use crate::gun::{
-    barrel::BarrelSprite,
-    gun::{Gun, GunControlStatus},
+use crate::{
+    gun::{
+        barrel::BarrelSprite,
+        gun::{Gun, GunControlStatus},
+    },
+    util::DeadFlag,
 };
 
 pub fn fire_system(
@@ -39,6 +42,7 @@ pub fn fire_system(
 
             commands.spawn((
                 bullet,
+                DeadFlag(false),
                 Mesh2d(b_mesh.clone()),
                 MeshMaterial2d(b_material.clone()),
                 Transform {

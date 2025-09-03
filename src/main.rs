@@ -1,3 +1,4 @@
+mod effect;
 mod enemy;
 mod gun;
 mod util;
@@ -8,12 +9,14 @@ use gun::barrel::*;
 use gun::gun::*;
 use std::f32;
 
+use crate::effect::structs::EffectModel;
+use crate::effect::systems::EffectPlugin;
 use crate::enemy::aim::AimSprite;
 use crate::enemy::func::normal_enemy_spawn;
 use crate::enemy::structs::EnemyMeshes;
 use crate::enemy::systems::EnemyPlugin;
 use crate::gun::systems::*;
-use util::*;
+use crate::util::UtilPlugin;
 
 fn main() {
     App::new()
@@ -27,6 +30,8 @@ fn main() {
                 }),
                 ..default()
             }),
+            UtilPlugin,
+            EffectPlugin,
             EnemyPlugin,
             GunPlugin,
         ))
@@ -36,11 +41,10 @@ fn main() {
 
 fn setup(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     aim_sprite: Res<AimSprite>,
     enemy_sprite: Res<EnemyMeshes>,
     bullet_meshes: Res<BulletModel>,
+    effect_model: Res<EffectModel>,
 ) {
     commands.spawn(Camera2d::default());
 
@@ -55,6 +59,7 @@ fn setup(
         eb_mesh,
         eb_material,
         &aim_sprite,
+        vec![effect_model.dot.clone()],
     );
 
     let pb_mesh = bullet_meshes.base.clone();
@@ -122,3 +127,9 @@ fn setup(
             Visibility::default(),
         ));
 }
+
+// 이펙트 {
+//   메쉬, 컬러, 방향, 시간, 스케일, 지난 시간
+//   색상 시작, 색상 끝,
+//   방향 시작, 방향 끝
+// }
