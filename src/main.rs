@@ -74,6 +74,7 @@ fn setup(
         mesh: pb_mesh,
         material: pb_material,
     };
+
     commands
         .spawn((
             Gun {

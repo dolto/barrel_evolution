@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    effect::structs::EffectMaker,
     gun::{
         barrel::BarrelSprite,
         gun::{Gun, GunControlStatus},
@@ -10,7 +11,7 @@ use crate::{
 
 pub fn fire_system(
     gun: Single<(&mut Gun, &GlobalTransform)>,
-    barrels: Query<(&BarrelSprite, &GlobalTransform)>,
+    barrels: Query<(&BarrelSprite, &GlobalTransform, Option<&mut EffectMaker>)>,
     mut gun_status: ResMut<GunControlStatus>,
     mut commands: Commands,
 ) {
@@ -19,7 +20,7 @@ pub fn fire_system(
     }
     let (mut gun, g_global_trans) = gun.into_inner();
 
-    for (index, global_trans) in barrels {
+    for (index, global_trans, mut effect_maker) in barrels {
         let local_pos =
             g_global_trans.compute_matrix().inverse() * global_trans.translation().extend(1.0);
         let local_x = local_pos.x;
@@ -39,6 +40,10 @@ pub fn fire_system(
             let barrel_offset = Vec3::new(gun.radius, 20., 0.); // 총열 위치 (총 로컬 좌표 기준)
             let spawn_pos =
                 g_global_trans.rotation() * barrel_offset + g_global_trans.translation();
+
+            if let Some(ref mut effect_maker) = effect_maker {
+                effect_maker.make_flag = true;
+            }
 
             commands.spawn((
                 bullet,

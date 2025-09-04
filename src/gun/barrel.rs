@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
+    effect::structs::EffectMaker,
     gun::gun::{Gun, GunControlStatus},
-    util::{DeadFlag, dead_flag, make_rect_mesh},
+    util::make_rect_mesh,
 };
 
 pub struct Barrel {

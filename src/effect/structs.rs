@@ -98,6 +98,7 @@ pub struct EffectMaker {
     pub rotate: Range<Vec3>,       // 회전 범위
     pub meshes: Vec<Handle<Mesh>>, // 이펙트 메쉬
     pub make_flag: bool,           // 메이커 실행 플래그
+    pub offset_pos: Vec3,          // 이펙트 생성 지점
 }
 
 fn rand_between(a: f32, b: f32) -> f32 {
@@ -114,17 +115,21 @@ impl EffectMaker {
 
         let mut effects = Vec::with_capacity(count);
 
+        let mut trans = trans.clone();
+
         for _ in 0..count {
-            let start_dir = Vec3::new(
-                rand_between(self.start_dir.start.x, self.start_dir.end.x),
-                rand_between(self.start_dir.start.y, self.start_dir.end.y),
-                rand_between(self.start_dir.start.z, self.start_dir.end.z),
-            );
-            let end_dir = Vec3::new(
-                rand_between(self.end_dir.start.x, self.end_dir.end.x),
-                rand_between(self.end_dir.start.y, self.end_dir.end.y),
-                rand_between(self.end_dir.start.z, self.end_dir.end.z),
-            );
+            let start_dir = trans.rotation
+                * Vec3::new(
+                    rand_between(self.start_dir.start.x, self.start_dir.end.x),
+                    rand_between(self.start_dir.start.y, self.start_dir.end.y),
+                    rand_between(self.start_dir.start.z, self.start_dir.end.z),
+                );
+            let end_dir = trans.rotation
+                * Vec3::new(
+                    rand_between(self.end_dir.start.x, self.end_dir.end.x),
+                    rand_between(self.end_dir.start.y, self.end_dir.end.y),
+                    rand_between(self.end_dir.start.z, self.end_dir.end.z),
+                );
 
             let start_scale = rand_between(self.start_scale.start, self.start_scale.end);
             let end_scale = rand_between(self.end_scale.start, self.end_scale.end);
@@ -173,7 +178,7 @@ impl EffectMaker {
             });
         }
 
-        // info!("{:?}", effects);
+        trans.translation += self.offset_pos;
         for effect in effects {
             let child = (
                 Transform::default(),

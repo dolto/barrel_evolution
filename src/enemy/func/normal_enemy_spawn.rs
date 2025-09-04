@@ -95,6 +95,7 @@ pub fn normal_enemy_spawn(
                 rotate: Vec3::splat(-10.)..Vec3::splat(10.),
                 meshes: effect_mesh,
                 make_flag: false,
+                offset_pos: Vec3::ZERO,
             },
         ))
         .with_child((
